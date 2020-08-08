@@ -1,12 +1,18 @@
 
 const server = require('http').createServer();
-const io = require('socket.io')(server);
+const io = require('socket.io')(server, {
+  path: '/',
+  pingInterval: 10000,
+  pingTimeout: 5000,
+});
 
-io.on('rec_frame', client => {
-    console.log("==>", client);
-  client.on('event', data => { /* … */ });
+io.on('connection', client => {
+    console.log("==> connection established!!");
+  client.on('image_info', data => { 
+      console.log('got data => ', data);
+      client.emit('image_info', {"data": "I got the data!!!!"});
+   });
   client.on('disconnect', () => { /* … */ });
-  io.emit('rec_frame', {"data": "I got the data!!!!"})
 });
 
 server.listen(3000);

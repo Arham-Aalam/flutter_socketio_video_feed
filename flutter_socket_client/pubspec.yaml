@@ -24,6 +24,7 @@ dependencies:
   flutter:
     sdk: flutter
   image: ^2.1.12
+  flutter_socket_io: ^0.6.0
 
 
   # The following adds the Cupertino Icons font to your application.

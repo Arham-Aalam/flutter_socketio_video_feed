@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:image/image.dart' as imglib;
-// import 'package:tflite/tflite.dart';
-import 'dart:math' as math;
 
-// import 'models.dart';
+import 'dart:math' as math;
+import 'package:flutter_socket_io/flutter_socket_io.dart';
+import 'package:flutter_socket_io/socket_io_manager.dart';
+
+import 'constant.dart';
 
 typedef void Callback(List<dynamic> list, int h, int w);
 
@@ -20,10 +22,19 @@ class Camera extends StatefulWidget {
 class _CameraState extends State<Camera> {
   CameraController controller;
   bool isDetecting = false;
+  SocketIO socketIO;
 
   @override
   void initState() {
     super.initState();
+
+    socketIO = SocketIOManager().createSocketIO(Constant.BASE_URL, "/",
+        query: "userId=21031", socketStatusCallback: _socketStatus);
+    socketIO.init();
+
+    socketIO.subscribe("image_info", _onSocketInfo);
+
+    socketIO.connect();
 
     if (widget.cameras == null || widget.cameras.length < 1) {
       print('No camera is found');
@@ -41,11 +52,25 @@ class _CameraState extends State<Camera> {
         controller.startImageStream((CameraImage img) {
           // we will get image here
           dynamic imgData = convertYUV420toImageColor(img);
-          print("==>");
-          print(imgData);
+          // print("==>");
+          // print(imgData);
+          String jsondata = '{"data": "image"}';
+          socketIO.sendMessage("image_info", jsondata, _onReceiveFrame);
         });
       });
     }
+  }
+
+  void _onSocketInfo(dynamic data) {
+    print("Receiver: " + data);
+  }
+
+  void _socketStatus(dynamic data) {
+    print('status : ' + data);
+  }
+
+  void _onReceiveFrame(dynamic data) {
+    print("OnReceive: " + data);
   }
 
   Future<Image> convertYUV420toImageColor(CameraImage image) async {
@@ -55,8 +80,8 @@ class _CameraState extends State<Camera> {
       final int uvRowStride = image.planes[1].bytesPerRow;
       final int uvPixelStride = image.planes[1].bytesPerPixel;
 
-      print("uvRowStride: " + uvRowStride.toString());
-      print("uvPixelStride: " + uvPixelStride.toString());
+      // print("uvRowStride: " + uvRowStride.toString());
+      // print("uvPixelStride: " + uvPixelStride.toString());
 
       // imgLib -> Image package from https://pub.dartlang.org/packages/image
       var img = imglib.Image(width, height); // Create Image buffer
